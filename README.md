@@ -28,6 +28,8 @@ conda install -c conda-forge mayavi   # visualization
 ```
 cu102 can be replaced by cpu or other CUDA versions depending on the platform
 
+On TACC Vista (aarch64, GH200), the dependencies and environment setup can be found in [docs/env_vista.md](docs/env_vista.md).
+
 ## Reproduce paper results
 The trained models, including the regressor and classifier, are provided in the folder `model/`   
 In the paper, the trained models are validated by comparing the predicted 3D field data with the high-fidelity data. We choose a `phase field (PF)` solver as the method to generate high-fidelity data. The codes can be found here https://github.com/YigongQin/cuPF. Under the folder `rawdat_PF/`, we provide two compressed PF data. One is of domain size (40um, 40um, 50um), and the other is of domain size (120um, 120um, 50um). To compare the GrainGNN results and PF results, and reproduce the results reported in the paper, follow the steps below.
@@ -81,9 +83,10 @@ Explore more arguments in `graph_trajectory.py` for more configuration, such as 
 The graph pairs used for training can be downloaded here: https://drive.google.com/file/d/19uNh7XwHWMhF4PGLFcD-VM5YvYXBpHV_/view?usp=sharing  
 Decompress the file and optionally change the training parameters in the `parameters.py`
 ```sh
-gzip dataset_train.pkl.gz
+gzip -d dataset_train.pkl.gz
 python3 train.py --model_type=regressor --model_id=0 --device=cuda
 python3 train.py --model_type=classifier --model_id=1 --device=cuda
+# add --model_dir ./model_demo/ (or similar) to avoid overwriting the shipped checkpoints in model/
 ```
 Log files of the training process are provided in `model/` folder. The training curves can be found in the paper.
 

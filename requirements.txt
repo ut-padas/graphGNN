@@ -1,5 +1,7 @@
 dill
-matplotlib
-shapely
-termcolor
 h5py
+matplotlib
+numpy<2
+pillow
+scipy
+termcolor
