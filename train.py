@@ -47,7 +47,7 @@ def criterion(data, pred, mask, edge_dict):
         y = y[qualified_y]
         z = z[qualified_y]
         
-        classifier = torch.nn.BCEWithLogitsLoss(pos_weight=torch.tensor(hp.weight))
+        classifier = torch.nn.BCEWithLogitsLoss(pos_weight=torch.tensor(hp.weight, dtype=z.dtype, device=z.device))
         
         """
         '''dx, dy for event'''

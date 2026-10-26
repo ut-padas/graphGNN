@@ -18,10 +18,12 @@ from parameters import regressor, classifier_transfered
 from graph_trajectory import graph_trajectory
 from metrics import feature_metric, edge_error_metric
 
-from visualization3D.pv_3Dview import grain_visual
+try:
+    from visualization3D.pv_3Dview import grain_visual  # needs mayavi/tvtk, only used with --plot3D
+except ImportError:
+    grain_visual = None
 
 from scipy.interpolate import griddata
-from tvtk.api import tvtk, write_data
 from math import pi
 
 
@@ -606,6 +608,8 @@ if __name__=='__main__':
                 """    
                 
             if args.plot3D:
+                if grain_visual is None:
+                    raise ImportError('--plot3D requires mayavi (tvtk); install it or drop --plot3D')
                 Gv = grain_visual(seed=grain_seed, height=traj.final_height, lxd=traj.lxd) 
                 Gv.graph_recon(traj, rawdat_dir=args.truth_dir, span=span//(args.interp_frames+1), alpha_field_list=alpha_field_list, subsample=args.reconst_mesh_size/0.08)
             
