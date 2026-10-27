@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.colors import ListedColormap
 plt.rcParams.update({'font.size': 24})
-coolwarm = cm.get_cmap('coolwarm', 256)
+coolwarm = plt.get_cmap('coolwarm', 256)  # cm.get_cmap removed in matplotlib 3.11
 newcolors = coolwarm(np.linspace(0, 1, 256*100))
 ly = np.array([255/256, 255/256, 255/256, 1])
 newcolors[0, :] = ly

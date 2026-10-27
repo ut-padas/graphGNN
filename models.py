@@ -348,6 +348,26 @@ class LSTM(nn.Module):
         
         
     
+
+def _hetero_key_format(keys):
+    """PyG <2.4 names HeteroConv sub-modules convs.src__rel__dst, PyG >=2.4 names them convs.<src___rel___dst>."""
+    for k in keys:
+        if '.convs.' in k:
+            return 'new' if '.convs.<' in k else 'old'
+    return None
+
+def remap_hetero_state_dict(state_dict, target_keys):
+    """Rename HeteroConv keys of a saved state_dict to the format expected by the running PyG version."""
+    import re
+    src_fmt, dst_fmt = _hetero_key_format(state_dict.keys()), _hetero_key_format(target_keys)
+    if src_fmt is None or dst_fmt is None or src_fmt == dst_fmt:
+        return state_dict
+    if dst_fmt == 'new':
+        pat, sub = re.compile(r'\.convs\.([^.<>]+?)__([^.<>]+?)__([^.<>]+?)\.'), r'.convs.<\1___\2___\3>.'
+    else:
+        pat, sub = re.compile(r'\.convs\.<([^.<>]+?)___([^.<>]+?)___([^.<>]+?)>\.'), r'.convs.\1__\2__\3.'
+    return type(state_dict)((pat.sub(sub, k), v) for k, v in state_dict.items())
+
 class GrainNN_regressor(nn.Module):
     """ GrainNN in 3D
         Args:
@@ -397,6 +417,9 @@ class GrainNN_regressor(nn.Module):
         
         self.scaling = {'grain':20, 'joint':5}
 
+    def load_state_dict(self, state_dict, *args, **kwargs):
+        # accept checkpoints saved under either PyG naming scheme (see remap_hetero_state_dict)
+        return super().load_state_dict(remap_hetero_state_dict(state_dict, self.state_dict().keys()), *args, **kwargs)
 
     def forward(self, x_dict, edge_index_dict, edge_attr):
         
@@ -568,7 +591,10 @@ class GrainNN_classifier(torch.nn.Module):
         self.lin1 = nn.Linear(linear_outchannels+1, 2) # predict length
         self.lin2 = nn.Linear(linear_outchannels+1, 1) # predict probability
 
-        
+    def load_state_dict(self, state_dict, *args, **kwargs):
+        # accept checkpoints saved under either PyG naming scheme (see remap_hetero_state_dict)
+        return super().load_state_dict(remap_hetero_state_dict(state_dict, self.state_dict().keys()), *args, **kwargs)
+
     def forward(self, x_dict, edge_index_dict, edge_attr):   
     
         if self.history:

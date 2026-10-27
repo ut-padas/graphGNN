@@ -1267,7 +1267,7 @@ if __name__ == '__main__':
             
             G_ = (traj.physical_params['G'] - GR_grid['G_min'])/(GR_grid['G_max'] - GR_grid['G_min'])
             R_ = (traj.physical_params['R'] - GR_grid['R_min'])/(GR_grid['R_max'] - GR_grid['R_min'])
-            hg0.span = griddata(np.array([GR_grid['G'], GR_grid['R']]).T, np.array(GR_grid['span']), (G_, R_), method='nearest')
+            hg0.span = int(griddata(np.array([GR_grid['G'], GR_grid['R']]).T, np.array(GR_grid['span']), (G_, R_), method='nearest'))  # scipy>=1.13 returns float64 here; keep the span an int
             
            # hg0.span = args.span
             hg0.form_gradient(prev = None, nxt = None, event_list = None, elim_list = None)
@@ -1313,7 +1313,7 @@ if __name__ == '__main__':
             
             G_ = (traj.physical_params['G'] - GR_grid['G_min'])/(GR_grid['G_max'] - GR_grid['G_min'])
             R_ = (traj.physical_params['R'] - GR_grid['R_min'])/(GR_grid['R_max'] - GR_grid['R_min'])
-            hg0.span = griddata(np.array([GR_grid['G'], GR_grid['R']]).T, np.array(GR_grid['span']), (G_, R_), method='nearest')
+            hg0.span = int(griddata(np.array([GR_grid['G'], GR_grid['R']]).T, np.array(GR_grid['span']), (G_, R_), method='nearest'))  # scipy>=1.13 returns float64 here; keep the span an int
             
            # hg0.span = args.span
             hg0.form_gradient(prev = None, nxt = None, event_list = None, elim_list = None)

@@ -141,9 +141,9 @@ def grain_class_acc(prob, label):
 
        # print(threshold)
 
-        TruePositive  = sum( (y==1) & (prob<threshold) )
-        FalsePositive = sum( (y==0) & (prob<threshold) )
-        FalseNegative = sum( (y==1) & (prob>=threshold) )
+        TruePositive  = torch.sum( (y==1) & (prob<threshold) )
+        FalsePositive = torch.sum( (y==0) & (prob<threshold) )
+        FalseNegative = torch.sum( (y==1) & (prob>=threshold) )
 
 
         if TruePositive + FalsePositive>0 and TruePositive + FalseNegative>0:
@@ -189,9 +189,9 @@ def class_acc(prob, label):
 
        # print(threshold)
 
-        TruePositive  = sum( (y==1) & (prob>threshold) )
-        FalsePositive = sum( (y==0) & (prob>threshold) )
-        FalseNegative = sum( (y==1) & (prob<=threshold) )
+        TruePositive  = torch.sum( (y==1) & (prob>threshold) )
+        FalsePositive = torch.sum( (y==0) & (prob>threshold) )
+        FalseNegative = torch.sum( (y==1) & (prob<=threshold) )
         
         
         if TruePositive + FalsePositive>0 and TruePositive + FalseNegative>0:

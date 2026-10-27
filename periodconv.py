@@ -4,7 +4,10 @@ from typing import Optional, Tuple, Union
 import torch
 import torch.nn.functional as F
 from torch import Tensor
-from torch_sparse import SparseTensor
+try:
+    from torch_sparse import SparseTensor
+except ImportError:  # torch_sparse has no aarch64 wheels; PyG>=2.3 ships a stub
+    from torch_geometric.typing import SparseTensor
 
 from torch_geometric.nn.conv import MessagePassing
 from torch_geometric.nn.dense.linear import Linear
@@ -170,7 +173,7 @@ class PeriodConv(MessagePassing):
         if isinstance(x, Tensor):
             x: PairTensor = (x, x)
 
-        # propagate_type: (query: Tensor, key:Tensor, value: Tensor, edge_attr: OptTensor) # noqa
+        # propagate_type: (x: PairTensor, edge_attr: OptTensor)  # noqa  (PyG>=2.5 builds propagate() from this)
         out = self.propagate(edge_index, x=x,
                              edge_attr=edge_attr, size=None)
 
