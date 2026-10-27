@@ -269,7 +269,7 @@ if __name__=='__main__':
             else:
                 st_idx = datasets[case].find('span') + 4
                 end_idx = datasets[case].find('.')
-                span = int(datasets[case][st_idx:-4])
+                span = int(float(datasets[case][st_idx:-4]))  # accept 'span6' and 'span6.0'
             
             print('expected span', span)
             traj.span = span
