@@ -16,20 +16,8 @@ If you are using the codes in this repository, please cite the paper
 ```
 
 ## Build
-GrainGNN runs on python environment with versions python=3.7 and torch=1.12. Note that gcc compiler may be required for building torch-cluster etc.
 
-```sh
-conda create -n GNN python=3.7  
-conda activate GNN
-pip3 install torch==1.12.0+cu102 --extra-index-url https://download.pytorch.org/whl/cu102
-pip3 install torch-geometric==2.1.0 torch-cluster==1.6.0 torch-scatter==2.1.0 torch-sparse==0.6.15 -f https://data.pyg.org/whl/torch-1.12.0+cu102.html
-pip3 install -r requirements.txt   # other dependencies 
-conda install -c conda-forge mayavi   # visualization
-```
-cu102 can be replaced by cpu or other CUDA versions depending on the platform
-
-On TACC Vista (aarch64, GH200), the dependencies and environment setup can be found in [docs/env_vista.md](docs/env_vista.md).
-On TACC Stampede3 (H100 nodes), see [docs/env_stampede3.md](docs/env_stampede3.md).
+See [docs/env_tacc.md](docs/env_tacc.md) for environment setup on TACC Vista (GH200) and Stampede3 (H100).
 
 ## Reproduce paper results
 The trained models, including the regressor and classifier, are provided in the folder `model/`   

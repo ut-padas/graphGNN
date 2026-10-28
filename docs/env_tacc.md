@@ -1,4 +1,4 @@
-# GrainGNN on TACC Stampede3 (H100)
+# GrainGNN on TACC (Vista / Stampede3)
 
 **Prerequisite:** conda (Anaconda or Miniconda) installed under `$WORK`.
 
@@ -27,9 +27,14 @@ Expected: 72 / 75 grain elimination events, last-layer error 0.1128.
 
 ## Step 3. Submit a job
 
+| System | Partition |
+|---|---|
+| Vista | `gh-dev` (2 h), `gh` (48 h), `gg` (CPU, 48 h) |
+| Stampede3 | `h100` |
+
 ```sh
 #!/bin/bash
-#SBATCH -p h100
+#SBATCH -p <partition>
 #SBATCH -N 1 -n 1 -t 01:00:00
 #SBATCH -A ASC21034
 source $WORK/anaconda3/bin/activate GNN
@@ -49,6 +54,17 @@ python3 test.py --truth_dir=./graphs/40_40/ --seed=10020 --model_dir=./model_dem
 
 `--model_dir` other than `./model/` keeps the paper models intact.
 
-## Versions
+## Tested versions
 
-Same as Vista ([env_vista.md](env_vista.md)): python 3.10, torch 2.8.0+cu129, torch-geometric 2.6.1, numpy 1.26, scipy 1.15, matplotlib 3.10, h5py 3.16.
+python 3.10.22, torch 2.8.0+cu129, torch-geometric 2.6.1, numpy 1.26.4, scipy 1.15.3, matplotlib 3.10.9, h5py 3.16.0
+
+## Code changes for PyTorch 2 / PyG 2.6 (already applied)
+
+| file | change |
+|---|---|
+| `periodconv.py`, `periodGATconv.py` | `SparseTensor` import falls back to `torch_geometric.typing`; `# propagate_type:` fixed to `(x, edge_attr)` |
+| `models.py` | HeteroConv state-dict keys remapped between PyG < 2.4 and >= 2.4 |
+| `test.py` | mayavi imported only with `--plot3D` |
+| `graph_datastruct.py` | `cm.get_cmap` -> `plt.get_cmap` |
+| `metrics.py` | `sum()` -> `torch.sum()` on CUDA tensors |
+| `train.py` | BCE `pos_weight` on the logits device |
