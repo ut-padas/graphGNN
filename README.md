@@ -29,6 +29,7 @@ conda install -c conda-forge mayavi   # visualization
 cu102 can be replaced by cpu or other CUDA versions depending on the platform
 
 On TACC Vista (aarch64, GH200), the dependencies and environment setup can be found in [docs/env_vista.md](docs/env_vista.md).
+On TACC Stampede3 (H100 nodes), see [docs/env_stampede3.md](docs/env_stampede3.md).
 
 ## Reproduce paper results
 The trained models, including the regressor and classifier, are provided in the folder `model/`   
