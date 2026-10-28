@@ -1,15 +1,8 @@
 # GrainGNN on TACC Stampede3 (H100)
 
-## Step 1. Install Anaconda (x86_64) under `$WORK`
+**Prerequisite:** conda (Anaconda or Miniconda) installed under `$WORK`.
 
-```sh
-cd $WORK
-wget https://repo.anaconda.com/archive/Anaconda3-2024.10-1-Linux-x86_64.sh
-bash Anaconda3-2024.10-1-Linux-x86_64.sh -b -p $WORK/anaconda3
-source $WORK/anaconda3/bin/activate
-```
-
-## Step 2. Create the environment
+## Step 1. Create the environment
 
 ```sh
 export PIP_CACHE_DIR=$SCRATCH/.cache/pip
@@ -22,7 +15,7 @@ pip install -r requirements.txt
 
 Do not conda-install anything else into `GNN`. `torch-sparse/scatter/cluster` are not needed.
 
-## Step 3. Check
+## Step 2. Check
 
 ```sh
 gzip -dk rawdat_PF/40_40/*.h5.gz
@@ -32,20 +25,20 @@ python3 test.py --truth_dir=./graphs/40_40/ --seed=10020
 
 Expected: 72 / 75 grain elimination events, last-layer error 0.1128.
 
-## Step 4. Submit a job
+## Step 3. Submit a job
 
 ```sh
 #!/bin/bash
 #SBATCH -p h100
 #SBATCH -N 1 -n 1 -t 01:00:00
-#SBATCH -A <allocation>
+#SBATCH -A ASC21034
 source $WORK/anaconda3/bin/activate GNN
 export PYTHONUNBUFFERED=1
 cd $SCRATCH/graphGNN
 python3 test.py --truth_dir=./graphs/40_40/ --seed=10020
 ```
 
-## Step 5. Train
+## Step 4. Train
 
 ```sh
 gzip -d dataset_train.pkl.gz        # keep on $SCRATCH (3.6 GB)
