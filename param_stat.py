@@ -14,7 +14,7 @@ qoi_dict = {'elimp':[], '_t':[], 'err':[]}
 
 for data_file in files:
     for qoi in qoi_dict:
-        element = int(re.search(qoi+'(\d+)', data_file).group(1))
+        element = int(re.search(qoi+r'(\d+)', data_file).group(1))
         qoi_dict[qoi].append(element)
         
 print(qoi_dict)

@@ -1,7 +1,7 @@
 dill
 h5py
 matplotlib
-numpy<2
+numpy
 pillow
 scipy
 termcolor

@@ -6,10 +6,10 @@
 
 ```sh
 export PIP_CACHE_DIR=$SCRATCH/.cache/pip
-conda create -n GNN --override-channels -c conda-forge python=3.10 pip
+conda create -n GNN --override-channels -c conda-forge python=3.12 pip
 conda activate GNN
-pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cu129
-pip install torch-geometric==2.6.1
+pip install torch==2.14.1
+pip install torch-geometric==2.8.1
 pip install -r requirements.txt
 ```
 
@@ -56,9 +56,9 @@ python3 test.py --truth_dir=./graphs/40_40/ --seed=10020 --model_dir=./model_dem
 
 ## Tested versions
 
-python 3.10.22, torch 2.8.0+cu129, torch-geometric 2.6.1, numpy 1.26.4, scipy 1.15.3, matplotlib 3.10.9, h5py 3.16.0
+Vista GH200, Oct 2026: python 3.12.16, torch 2.14.1+cu130, torch-geometric 2.8.1, numpy 2.5.4, scipy 1.18.1, matplotlib 3.11.2, h5py 3.16.0
 
-## Code changes for PyTorch 2 / PyG 2.6 (already applied)
+## Code changes for PyTorch 2 / PyG 2.6+ / Python 3.12 (already applied)
 
 | file | change |
 |---|---|
@@ -68,3 +68,5 @@ python 3.10.22, torch 2.8.0+cu129, torch-geometric 2.6.1, numpy 1.26.4, scipy 1.
 | `graph_datastruct.py` | `cm.get_cmap` -> `plt.get_cmap` |
 | `metrics.py` | `sum()` -> `torch.sum()` on CUDA tensors |
 | `train.py` | BCE `pos_weight` on the logits device |
+| `graph_trajectory.py`, `extract_dz_grid.py`, `param_stat.py`, `visualization3D/pv_3Dview.py` | regex patterns as raw strings (Python 3.12 `SyntaxWarning`) |
+| `requirements.txt` | `numpy<2` pin removed |
