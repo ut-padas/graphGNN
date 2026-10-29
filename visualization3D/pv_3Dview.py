@@ -52,9 +52,9 @@ class grain_visual:
         print('grid ', fnx, fny, fnz)
         
         
-        G = re.search('G(\d+)', self.data_file).group(1)
-        R = re.search('Rmax(\d+)', self.data_file).group(1)
-        data_frames = int(re.search('frames(\d+)', self.data_file).group(1))+1
+        G = re.search(r'G(\d+)', self.data_file).group(1)
+        R = re.search(r'Rmax(\d+)', self.data_file).group(1)
+        data_frames = int(re.search(r'frames(\d+)', self.data_file).group(1))+1
         self.physical_params = {'G':G, 'R':R}
         print(self.physical_params)
         
@@ -103,9 +103,9 @@ class grain_visual:
         print('grid ', fnx, fny, fnz)
         
         
-        G = re.search('G(\d+)', self.data_file).group(1)
-        R = re.search('Rmax(\d+)', self.data_file).group(1)
-        data_frames = int(re.search('frames(\d+)', self.data_file).group(1))+1
+        G = re.search(r'G(\d+)', self.data_file).group(1)
+        R = re.search(r'Rmax(\d+)', self.data_file).group(1)
+        data_frames = int(re.search(r'frames(\d+)', self.data_file).group(1))+1
         self.physical_params = {'G':G, 'R':R}
         print(self.physical_params)
         

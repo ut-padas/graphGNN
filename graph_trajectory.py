@@ -299,9 +299,9 @@ class graph_trajectory(graph):
         
 
 
-        G = re.search('G(\d+\.\d+)', self.data_file).group(1)
-        R = re.search('Rmax(\d+\.\d+)', self.data_file).group(1)
-        data_frames = int(re.search('frames(\d+)', self.data_file).group(1))+1
+        G = re.search(r'G(\d+\.\d+)', self.data_file).group(1)
+        R = re.search(r'Rmax(\d+\.\d+)', self.data_file).group(1)
+        data_frames = int(re.search(r'frames(\d+)', self.data_file).group(1))+1
         
         self.physical_params = {'G':float(G), 'R':float(R)}
         self.alpha_pde_frames = np.asarray(f['cross_sec'])

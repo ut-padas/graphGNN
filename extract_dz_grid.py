@@ -24,9 +24,9 @@ for i in range(1443):
         continue
     for qoi in qoi_dict:        
         if qoi == 'span':
-            element = int(re.search(qoi+'(\d+)', graph_file).group(1))
+            element = int(re.search(qoi+r'(\d+)', graph_file).group(1))
         else:    
-            element = float(re.search(qoi+'(\d+\.\d+)', file).group(1))
+            element = float(re.search(qoi+r'(\d+\.\d+)', file).group(1))
         qoi_dict[qoi].append(element)
         #print(element) 
 #
