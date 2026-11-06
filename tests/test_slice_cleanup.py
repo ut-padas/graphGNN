@@ -42,6 +42,16 @@ def test_split_bad_corners_periodic_four_ids():
     assert n >= 1 and not ((corner_degree(corner_blocks(out, (True, True))) == 4)).any()
 
 
+def test_split_bad_corners_does_not_ping_pong():
+    # 6x6 crop of an ExaCA slice (campaign stack G3.02_V2.0_s1133, layer 57): the support rule alone pushed the
+    # degree-4 corner back and forth between two corners, one change per sweep, and left it unresolved.
+    S = np.array([[5, 4, 4, 4, 3, 3], [5, 4, 4, 3, 3, 6], [5, 5, 4, 6, 6, 6],
+                  [5, 5, 2, 1, 6, 6], [5, 2, 2, 1, 1, 6], [2, 2, 2, 1, 1, 1]], np.int32)
+    out, n = split_bad_corners(S, (False, False))
+    blk = corner_blocks(out, (False, False))
+    assert n == 1 and not ((corner_degree(blk) == 4) & (blk.min(-1) >= 0)).any()
+
+
 if __name__ == '__main__':
     for name, fn in list(globals().items()):
         if name.startswith('test_'):
