@@ -376,6 +376,7 @@ class GrainNN_regressor(nn.Module):
     
     def __init__(self, hyper, history=False, edge_len=False):
         super().__init__()
+        self.features = hyper.features                   # feature names per node type: the rollout writes columns by name
   
         self.in_channels_dict = {node_type: len(features) 
                                  for node_type, features in hyper.features.items()}
@@ -413,7 +414,7 @@ class GrainNN_regressor(nn.Module):
                         for node_type, targets in hyper.targets.items()}) 
         
         if self.edge_len:
-            self.lin1 = nn.Linear(2*linear_outchannels+2, 1)
+            self.lin1 = nn.Linear(2*linear_outchannels+1, 1)   # pair embedding + current edge length
         
         self.scaling = {'grain':20, 'joint':5}
 
@@ -472,7 +473,8 @@ class GrainNN_regressor(nn.Module):
        # area = F.normalize(area, p=1, dim=-1)
         y_dict['grain'][:, 0] = torch.tanh(y_dict['grain'][:, 0]) #area - x_dict['grain'][:, 3]
  
-        y_dict['grain'][:, 1] = F.relu(y_dict['grain'][:, 1]) # excess volume predict
+        if y_dict['grain'].shape[1] > 1:
+            y_dict['grain'][:, 1] = F.relu(y_dict['grain'][:, 1]) # excess volume predict (absent when extraV is dropped)
         
                 
         if self.edge_len: 
@@ -484,7 +486,7 @@ class GrainNN_regressor(nn.Module):
             pair_feature = torch.cat([joint_feature[src], joint_feature[dst], edge_attr['joint', 'connect', 'joint']], dim=-1)
     
     
-            y_dict['edge'] = torch.tanh(self.lin1(pair_feature)) 
+            y_dict['edge'] = torch.tanh(self.lin1(pair_feature)).view(-1)   # (E,), same shape as the edge target and mask
             
 
         return y_dict            
@@ -498,7 +500,7 @@ class GrainNN_regressor(nn.Module):
         # features
         junction_change = y_dict['joint'] 
         grain_change = y_dict['grain'][:, 0]
-        volume_change = y_dict['grain'][:, 1]
+        volume_change = y_dict['grain'][:, 1] if y_dict['grain'].shape[1] > 1 else torch.zeros_like(y_dict['grain'][:, 0])
 
         if 'melt_left' in geometry_scaling:           
             print(geometry_scaling['melt_left'], geometry_scaling['melt_right'], geometry_scaling['melt_extra'])
@@ -532,7 +534,8 @@ class GrainNN_regressor(nn.Module):
         
         x_dict['joint'][:, :2]  += junction_change/self.scaling['joint'] # junction movement -> (x,y)
         x_dict['grain'][:, 3]   += grain_change/self.scaling['grain']  # grain area change -> s
-        x_dict['grain'][:, 4]   =  volume_change   # extra volume v
+        if 'extraV' in self.features['grain']:            # absent in datasets without the extra-volume feature
+            x_dict['grain'][:, self.features['grain'].index('extraV')] = volume_change   # extra volume v
         
         # gradients
         x_dict['joint'][:, 6:8] = junction_change  # dx, dy
