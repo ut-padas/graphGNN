@@ -26,10 +26,12 @@ def read_vtk(path, array='GrainID'):
     return Field(ids=ids, cell=float(sx * to_um), dz=float(sz * to_um), source=str(path))
 
 
-def exaca_theta(ids, orientation_csv, n_orient=None):
-    """theta_x, theta_z per grain id from ExaCA's orientation table (rows = the three <100> unit vectors).
-    theta_z = angle between the <100> axis nearest to the build direction and z (0..54.7 deg);
-    theta_x = azimuth of that axis modulo pi/2.  Both in radians, as in graph_datastruct."""
+def exaca_theta(ids, orientation_csv, n_orient=None, theta_x='tilted'):
+    """theta_x, theta_z per grain id from ExaCA's orientation table (rows = the three <100> unit vectors), in radians
+    as in graph_datastruct.  theta_z = angle between the <100> axis nearest to the build direction and z (0..54.7 deg).
+    theta_x = azimuth modulo pi/2 of that tilted axis ('tilted', default; in cuPF this coincides with the azimuth of
+    the lateral <100> axes) or of the <100> axis nearest to the plane ('lateral', the in-plane rotation that sets the
+    octahedron's lateral reach; trained no better on the 0.1 um pilot, 2026-11-03)."""
     ori = np.loadtxt(orientation_csv, delimiter=',', skiprows=1).reshape(-1, 3, 3)
     n_orient = n_orient or len(ori)
     theta = {}
@@ -40,5 +42,7 @@ def exaca_theta(ids, orientation_csv, n_orient=None):
         a = axes[np.argmax(np.abs(axes[:, 2]))]
         if a[2] < 0:
             a = -a
-        theta[int(g)] = (float(np.arctan2(a[1], a[0]) % (np.pi / 2)), float(np.arccos(min(1.0, a[2]))))
+        b = a if theta_x == 'tilted' else axes[np.argmin(np.abs(axes[:, 2]))]
+        theta[int(g)] = (float(np.arctan2(b[1], b[0]) % (np.pi / 2)), float(np.arccos(min(1.0, a[2]))))
     return theta
+
