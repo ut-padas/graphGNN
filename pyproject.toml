@@ -8,6 +8,7 @@ build-backend = "setuptools.build_meta"
 name = "graingnn-extract"
 version = "0.1.0"
 description = "GrainGNN training samples from ExaCA (or cuPF) grain-id stacks"
+readme = "extract/README.md"
 requires-python = ">=3.9"
 dependencies = ["numpy>=1.24", "scipy>=1.10", "vtk>=9.2"]
 
@@ -20,3 +21,6 @@ graingnn-extract = "extract.__main__:main"
 
 [tool.setuptools]
 packages = ["extract"]
+
+[tool.setuptools.package-data]
+extract = ["examples/*.json"]
