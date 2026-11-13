@@ -3,6 +3,7 @@ extractor provides ground truth (junction counts, positions, events, the 72/75 a
 fields are how additional phase-field test cases enter the same pipeline. Not needed to process ExaCA data.
 """
 from pathlib import Path
+import os, re
 import numpy as np
 from .grain_field import Field
 
@@ -41,3 +42,21 @@ def cupf_theta(angles):
     a = np.asarray(angles) % (np.pi / 2)
     n = (len(a) - 1) // 2
     return {g: (float(a[g]), float(a[n + g])) for g in range(1, n + 1)}
+
+
+def read_cupf(path):
+    """A cuPF h5 file -> Field with theta: the 3D field (`alpha`) or the QoI cross-sections (`cross_sec`), by content."""
+    import h5py
+    with h5py.File(path, 'r') as f:
+        is_alpha, angles = 'alpha' in f, np.asarray(f['angles'])
+    field = (read_cupf_alpha if is_alpha else read_cupf_cross_sec)(path)
+    field.theta = cupf_theta(angles)
+    return field
+
+
+def cupf_params(path):
+    """(G, R, seed) from a cuPF file name such as ..._G1.9_Rmax0.558_..._seed10020...; None where a token is missing."""
+    name = os.path.basename(path)
+    gr = re.search(r'G(\d+\.\d+)_Rmax(\d+\.\d+)', name)
+    seed = re.search(r'seed(\d+)', name)
+    return (float(gr.group(1)) if gr else None, float(gr.group(2)) if gr else None, int(seed.group(1)) if seed else None)

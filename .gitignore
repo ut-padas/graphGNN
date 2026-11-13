@@ -7,3 +7,6 @@ dataset_train.pkl.gz
 dataset_train.pkl.part
 dataset_train.pkl.gz.part
 graphs/120_120/traj0.pkl
+*.egg-info/
+build/
+dist/

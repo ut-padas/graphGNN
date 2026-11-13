@@ -1,4 +1,5 @@
 """Readers for ExaCA output: the GrainID field (legacy VTK) and the orientation table."""
+import json, os
 import numpy as np
 from .grain_field import Field
 
@@ -46,3 +47,21 @@ def exaca_theta(ids, orientation_csv, n_orient=None, theta_x='tilted'):
         theta[int(g)] = (float(np.arctan2(b[1], b[0]) % (np.pi / 2)), float(np.arccos(min(1.0, a[2]))))
     return theta
 
+
+
+def read_run(path):
+    """An ExaCA run directory (or its input json) -> dict(vtk, G, R, seed, orientations, name).
+    G in K/um and R = V in m/s as in the paper: ExaCA stores G in K/m and the cooling rate G*V in K/s. seed is
+    RandomSeed. orientations is the GrainOrientationFile when it is an absolute path or lies in the run directory,
+    else None (give --orientations). The VTK file is Printing.PathToOutput/OutputFile.vtk."""
+    cfg_path = path if path.endswith('.json') else os.path.join(path, 'input.json')
+    run_dir = os.path.dirname(os.path.abspath(cfg_path))
+    with open(cfg_path) as f:
+        cfg = json.load(f)
+    printing = cfg.get('Printing', {})
+    vtk = os.path.join(run_dir, printing.get('PathToOutput', './'), printing.get('OutputFile', 'test') + '.vtk')
+    G_per_m, cooling = float(cfg['TemperatureData']['G']), float(cfg['TemperatureData']['R'])
+    ori = cfg.get('GrainOrientationFile')
+    found = next((c for c in ([ori, os.path.join(run_dir, ori)] if ori else []) if os.path.isfile(c)), None)
+    return dict(vtk=vtk, G=G_per_m / 1e6, R=cooling / G_per_m, seed=int(cfg.get('RandomSeed', 0)), orientations=found,
+                name=os.path.basename(run_dir))
