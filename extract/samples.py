@@ -240,7 +240,9 @@ def main():
     parser.add_argument('src')
     parser.add_argument('out', help='pickle (dill) of the sample list')
     parser.add_argument('--cupf', action='store_true', help='src is a cuPF QoI h5 (cross_sec frames); G, R, seed from its name')
+    parser.add_argument('--cupf-alpha', action='store_true', help='src is a cuPF 3D field h5 (*_time*.h5, alpha); G, R, seed from its name')
     parser.add_argument('--orientations', help='ExaCA orientation csv for theta_x, theta_z')
+    parser.add_argument('--theta-x', choices=('tilted', 'lateral'), default='tilted', help='ExaCA theta_x definition (exaca_theta)')
     parser.add_argument('--G', type=float)
     parser.add_argument('--R', type=float)
     parser.add_argument('--seed', type=int, default=0)
@@ -251,10 +253,10 @@ def main():
     parser.add_argument('-v', '--verbose', action='store_true')
     a = parser.parse_args()
     G, R, seed = a.G, a.R, a.seed
-    if a.cupf:
+    if a.cupf or a.cupf_alpha:
         import h5py
-        from .cupf_reader import read_cupf_cross_sec, cupf_theta
-        field = read_cupf_cross_sec(a.src)
+        from .cupf_reader import read_cupf_cross_sec, read_cupf_alpha, cupf_theta
+        field = (read_cupf_alpha if a.cupf_alpha else read_cupf_cross_sec)(a.src)
         field.theta = cupf_theta(h5py.File(a.src, 'r')['angles'])
         m = re.search(r'G(\d+\.\d+)_Rmax(\d+\.\d+)', a.src)
         if m:
@@ -264,7 +266,7 @@ def main():
     else:
         field = read_vtk(a.src)
         if a.orientations:
-            field.theta = exaca_theta(field.ids, a.orientations)
+            field.theta = exaca_theta(field.ids, a.orientations, theta_x=a.theta_x)
     if G is None or R is None:
         parser.error('--G and --R are required')
     raw = track_stack(field, verbose=a.verbose)
