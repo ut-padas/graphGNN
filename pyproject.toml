@@ -1,0 +1,26 @@
+# Installs the `extract` package only (GrainGNN training samples from ExaCA or cuPF stacks).
+# The training scripts at the repository root are not packaged; see requirements*.txt for them.
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "graingnn-extract"
+version = "0.1.0"
+description = "GrainGNN training samples from ExaCA (or cuPF) grain-id stacks"
+readme = "extract/README.md"
+requires-python = ">=3.9"
+dependencies = ["numpy>=1.24", "scipy>=1.10", "vtk>=9.2"]
+
+[project.optional-dependencies]
+cupf = ["h5py>=3.8"]
+test = ["pytest"]
+
+[project.scripts]
+graingnn-extract = "extract.__main__:main"
+
+[tool.setuptools]
+packages = ["extract"]
+
+[tool.setuptools.package-data]
+extract = ["examples/*.json"]

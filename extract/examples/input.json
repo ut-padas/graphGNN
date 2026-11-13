@@ -1,0 +1,46 @@
+{
+ "SimulationType": "Directional",
+ "MaterialFileName": "Inconel625.json",
+ "GrainOrientationFile": "GrainOrientationVectors.csv",
+ "RandomSeed": 1001,
+ "Domain": {
+  "CellSize": 0.25,
+  "TimeStep": 0.1395,
+  "Nx": 160,
+  "Ny": 160,
+  "Nz": 200,
+  "PeriodicXY": true
+ },
+ "Nucleation": {
+  "Density": 0,
+  "MeanUndercooling": 5,
+  "StDev": 0.5
+ },
+ "TemperatureData": {
+  "G": 500000.0,
+  "R": 100000.0
+ },
+ "Substrate": {
+  "SurfaceSiteDensity": 0.074,
+  "FillBottomSurface": true,
+  "Epsilon": 0.002
+ },
+ "Printing": {
+  "PathToOutput": "./",
+  "OutputFile": "test",
+  "PrintBinary": false,
+  "PrintExaConstitSize": 0,
+  "Intralayer": {
+   "Increment": 10000000,
+   "Fields": [
+    "CellType"
+   ],
+   "PrintIdleFrames": false
+  },
+  "Interlayer": {
+   "Fields": [
+    "GrainID"
+   ]
+  }
+ }
+}

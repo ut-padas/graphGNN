@@ -26,6 +26,7 @@ height holds on average fewer than 9 switches and 4.5 eliminations.
 """
 import numpy as np
 from dataclasses import dataclass
+from types import SimpleNamespace
 from .periodic_grid import wrap_delta
 
 GRAIN_FEATURES = ['x', 'y', 'z', 'area', 'cosx', 'sinx', 'cosz', 'sinz', 'span']
@@ -39,19 +40,16 @@ SPAN_CHOICES_UM = (2.4, 3.2, 4.0, 4.8, 6.0, 8.0, 9.6, 12.0, 16.0, 24.0, 48.0)   
 NO_EDGE = -100
 
 
-class GrainSample:
-    """One training sample; attribute names follow graph_datastruct.GrainHeterograph."""
-
-    def __init__(self, span):
-        self.features = {'grain': GRAIN_FEATURES + HISTORY['grain'], 'joint': JOINT_FEATURES + HISTORY['joint']}
-        self.targets = {k: list(v) for k, v in TARGETS.items()}
-        self.events = {'grain_event': 'elimination', 'edge_event': 'rotation'}
-        self.edge_type = list(EDGE_TYPES)
-        self.targets_scaling = dict(SCALING)
-        self.feature_dicts, self.target_dicts, self.edge_index_dicts, self.edge_weight_dicts = {}, {}, {}, {}
-        self.mask, self.additional_features, self.physical_params, self.vertex2joint = {}, {}, {}, {}
-        self.edges, self.gids = [], None
-        self.span = int(span)
+def new_sample(span):
+    """One training sample: a plain namespace (so the pickle loads without this package) whose attribute names
+    follow graph_datastruct.GrainHeterograph."""
+    return SimpleNamespace(
+        features={'grain': GRAIN_FEATURES + HISTORY['grain'], 'joint': JOINT_FEATURES + HISTORY['joint']},
+        targets={k: list(v) for k, v in TARGETS.items()},
+        events={'grain_event': 'elimination', 'edge_event': 'rotation'},
+        edge_type=list(EDGE_TYPES), targets_scaling=dict(SCALING),
+        feature_dicts={}, target_dicts={}, edge_index_dicts={}, edge_weight_dicts={},
+        mask={}, additional_features={}, physical_params={}, vertex2joint={}, edges=[], gids=None, span=int(span))
 
 
 def unit_delta(b, a, periodic):
@@ -195,7 +193,7 @@ def build_samples(traj, G, R, span=None, stride=None, seed=0, z_range_um=Z_RANGE
         connect, connect_w, edge_event, edge_target, edge_mask = edge_labels(P, k, n, stays)
         push, push_w = grain_joint_edges(P, k)
         live = P.alive[k]
-        s = GrainSample(span)
+        s = new_sample(span)
         s.feature_dicts = {'grain': grain_state(P, k, p, span_feature), 'joint': joint_state(P, k, p, G, R, span_feature)}
         s.target_dicts = {'grain': (SCALING['grain'] * (P.area[n] - P.area[k]))[:, None], 'joint': target,
                           'grain_event': (live & ~P.alive[n]).astype(int), 'edge_event': edge_event, 'edge': edge_target}
@@ -229,68 +227,3 @@ def summary(samples, traj=None):
                      f'p99 {np.percentile(d, 99):.1f}, max {d.max():.1f}')
     return '\n'.join(lines)
 
-
-def main():
-    import argparse, re, dill
-    from .exaca_reader import read_vtk, exaca_theta
-    from .stack_tracking import track_stack
-    from .trajectory import smooth_tracks
-    from .graingnn_view import track_view, schedule_kinds
-    parser = argparse.ArgumentParser(description='GrainGNN training samples from an ExaCA VTK stack or a cuPF QoI file.')
-    parser.add_argument('src')
-    parser.add_argument('out', help='pickle (dill) of the sample list')
-    parser.add_argument('--cupf', action='store_true', help='src is a cuPF QoI h5 (cross_sec frames); G, R, seed from its name')
-    parser.add_argument('--cupf-alpha', action='store_true', help='src is a cuPF 3D field h5 (*_time*.h5, alpha); G, R, seed from its name')
-    parser.add_argument('--orientations', help='ExaCA orientation csv for theta_x, theta_z')
-    parser.add_argument('--theta-x', choices=('tilted', 'lateral'), default='tilted', help='ExaCA theta_x definition (exaca_theta)')
-    parser.add_argument('--G', type=float)
-    parser.add_argument('--R', type=float)
-    parser.add_argument('--seed', type=int, default=0)
-    parser.add_argument('--span', type=int, help='layers (default: calibrated from the event rates)')
-    parser.add_argument('--smooth', type=int, default=0, help='smooth_tracks window in layers')
-    parser.add_argument('--z-range', type=float, default=Z_RANGE_UM)
-    parser.add_argument('--save-traj', help='prefix: writes <prefix>_raw.npz and <prefix>_view.npz')
-    parser.add_argument('-v', '--verbose', action='store_true')
-    a = parser.parse_args()
-    G, R, seed = a.G, a.R, a.seed
-    if a.cupf or a.cupf_alpha:
-        import h5py
-        from .cupf_reader import read_cupf_cross_sec, read_cupf_alpha, cupf_theta
-        field = (read_cupf_alpha if a.cupf_alpha else read_cupf_cross_sec)(a.src)
-        field.theta = cupf_theta(h5py.File(a.src, 'r')['angles'])
-        m = re.search(r'G(\d+\.\d+)_Rmax(\d+\.\d+)', a.src)
-        if m:
-            G, R = float(m.group(1)), float(m.group(2))
-        m = re.search(r'seed(\d+)', a.src)
-        seed = int(m.group(1)) if m else seed
-    else:
-        field = read_vtk(a.src)
-        if a.orientations:
-            field.theta = exaca_theta(field.ids, a.orientations, theta_x=a.theta_x)
-    if G is None or R is None:
-        parser.error('--G and --R are required')
-    raw = track_stack(field, verbose=a.verbose)
-    view, _, schedule, painted = track_view(field, raw=raw)
-    K = raw.n_layers
-    kinds = schedule_kinds(raw, schedule)
-    print(f'{K} layers, {len(raw.gids)} grains; dead by lens/enclosed onset {kinds["onset"]}, by first gap {kinds["gap"]}, '
-          f'absent from layer 0 {kinds["absent"]}, alive throughout {kinds["never"]}; painted cells {int(painted.sum())} '
-          f'(max {int(painted.max())} in one layer)')
-    ev = {str(k): int(v) for k, v in zip(*np.unique(view.events['kind'], return_counts=True))}
-    print(f'view: {len(view.gids)} grains, {view.n_slots} slots, valid {int(view.valid.sum())}/{K}, events {ev}')
-    if a.smooth > 1:
-        smooth_tracks(view, a.smooth)
-    span = a.span or calibrate_span(view, span_choices(view.dz, K))
-    samples = build_samples(view, G, R, span=span, seed=seed, z_range_um=a.z_range)
-    print(f'span {span} layers = {span * view.dz:.2f} um; G {G} R {R} seed {seed}')
-    print(summary(samples, view))
-    with open(a.out, 'wb') as f:
-        dill.dump(samples, f)
-    print('wrote', a.out)
-    if a.save_traj:
-        raw.save(a.save_traj + '_raw.npz')
-        view.save(a.save_traj + '_view.npz')
-
-
-if __name__ == '__main__':
-    main()
