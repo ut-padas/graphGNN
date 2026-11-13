@@ -3,8 +3,8 @@
 remove_islands      every grain keeps its largest 4-connected piece; the other pieces are repainted from the
                     outside in, each cell taking the id of the surrounding grain it touches most
 split_bad_corners   a corner where four boundary segments meet (four ids, or a grain touching itself across the
-                    diagonal) cannot be a trivalent junction; the one cell with least support in its 3x3
-                    neighbourhood is changed to the best-supported other id of the block
+                    diagonal) cannot be a trivalent junction; one cell of its 2x2 block is changed to another id of
+                    the block, the change that leaves the fewest such corners and has the least support against it
 Both return (image, number of changed cells). No other cell is touched: this is not a smoothing filter.
 On the ExaCA runs seen so far the two together change about 0.05% of the cells of a slice.
 """
@@ -108,46 +108,70 @@ def corner_blocks(S, periodic):
 
 
 def corner_degree(blocks):
-    """Number of boundary segments meeting at each corner: 0 inside a grain, 2 on a boundary, 3 at a junction,
-    4 at a defect (four ids, or two ids in a checkerboard). blocks is the (H, W, 4) array of corner_blocks."""
+    """Number of boundary segments meeting at a corner: 0 inside a grain, 2 on a boundary, 3 at a junction, 4 at a
+    defect (four ids, or two ids in a checkerboard). blocks holds (here, below, right, below_right) on its last
+    axis: the (H, W, 4) array of corner_blocks, or the four ids of one corner."""
     here, below, right, below_right = (blocks[..., k] for k in range(4))
     return (here != below).astype(int) + (below != below_right) + (below_right != right) + (right != here)
 
 
-def split_bad_corners(S, periodic, max_pass=4):
+def split_bad_corners(S, periodic, max_pass=8):
     """Resolve every corner of degree 4 by changing one cell of its 2x2 block.
 
-    The cell changed is the one whose own id has the least support (fewest cells of that id) in its 3x3
-    neighbourhood; it takes the other id of the block with the most support there. Support windows wrap only on
-    periodic axes. One change can create a new degree-4 corner next door, hence up to max_pass sweeps; one or two
-    are needed in practice. Returns (image, number of changed cells).
+    The candidates are the changes of one block cell to another id of the block. The change kept is the one that
+    leaves the fewest degree-4 corners around the changed cell (so a defect is not pushed back and forth between
+    two corners, which happened on about 2% of ExaCA stacks); among those, the cell whose own id has the least
+    support (fewest cells of that id) in its 3x3 neighbourhood, taking the id with the most support there.
+    Support windows wrap only on periodic axes. A change can still create a new degree-4 corner next door, hence
+    up to max_pass sweeps; one or two are needed in practice. Returns (image, number of changed cells).
     """
     S = S.copy()
-    changed = 0
     H, W = S.shape
+    changed = 0
+
+    def wrap(i, j):
+        """Cell (i, j) brought into the image on the periodic axes; None when it lies outside on a walled axis."""
+        i = i % H if periodic[1] else i
+        j = j % W if periodic[0] else j
+        return (i, j) if 0 <= i < H and 0 <= j < W else None
+
+    def block(i, j):
+        """The cells (here, below, right, below_right) of corner (i, j); None when one lies outside the image."""
+        cells = [wrap(i, j), wrap(i + 1, j), wrap(i, j + 1), wrap(i + 1, j + 1)]
+        return None if None in cells else cells
+
+    def degree(cells):
+        return corner_degree(np.array([S[c] for c in cells]))
 
     def support(cell, g):
-        """Cells of id g in the 3x3 neighbourhood of `cell`, the cell itself excluded."""
-        ys = window(cell[0], H, periodic[1])
-        xs = window(cell[1], W, periodic[0])
-        return int(np.sum(S[np.ix_(ys, xs)] == g)) - int(S[cell] == g)
+        """Cells of id g among the neighbours of `cell` in its 3x3 window."""
+        ys, xs = window(cell[0], H, periodic[1]), window(cell[1], W, periodic[0])
+        return int((S[np.ix_(ys, xs)] == g).sum()) - int(S[cell] == g)
+
+    def defects_around(cell):
+        """Degree-4 corners among the four corners of `cell`."""
+        i, j = cell
+        blocks = (block(i + di, j + dj) for di in (-1, 0) for dj in (-1, 0))
+        return sum(degree(b) == 4 for b in blocks if b is not None)
+
+    def cost(cell, g):
+        """Rank of changing `cell` to g: defects left around the cell, support of its own id, -support of g, g."""
+        old, S[cell] = S[cell], g
+        left = defects_around(cell)
+        S[cell] = old
+        return left, support(cell, old), -support(cell, g), g
 
     for _ in range(max_pass):
         blocks = corner_blocks(S, periodic)
-        inside = blocks.min(-1) >= 0
-        bad = list(zip(*np.where((corner_degree(blocks) == 4) & inside)))
-        if not bad:
+        bad = np.argwhere((corner_degree(blocks) == 4) & (blocks.min(-1) >= 0))
+        if not len(bad):
             break
         for i, j in bad:
-            i_below = (i + 1) % H if periodic[1] else i + 1
-            j_right = (j + 1) % W if periodic[0] else j + 1
-            cells = [(i, j), (i_below, j), (i, j_right), (i_below, j_right)]
-            ids = [int(S[c]) for c in cells]
-            still_bad = (ids[0] != ids[1]) + (ids[1] != ids[3]) + (ids[3] != ids[2]) + (ids[2] != ids[0]) == 4
-            if not still_bad:
+            cells = block(i, j)
+            if degree(cells) < 4:
                 continue                                       # resolved by an earlier change in this sweep
-            weakest = min(range(4), key=lambda q: support(cells[q], ids[q]))
-            other_ids = [g for q, g in enumerate(ids) if q != weakest and g != ids[weakest]]
-            S[cells[weakest]] = max(other_ids, key=lambda g: support(cells[weakest], g))
+            ids = {int(S[c]) for c in cells}
+            cell, g = min(((c, g) for c in cells for g in ids - {int(S[c])}), key=lambda cg: cost(*cg))
+            S[cell] = g
             changed += 1
     return S, changed
