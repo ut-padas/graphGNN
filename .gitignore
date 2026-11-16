@@ -10,3 +10,6 @@ graphs/120_120/traj0.pkl
 *.egg-info/
 build/
 dist/
+# HPC installer environments and logs (scripts/hpc)
+GrainGNN-Installation-*/
+*-install.log

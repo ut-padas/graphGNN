@@ -78,6 +78,26 @@ tail -f frontier-install.log
 
 The log reports the current installation stage; package downloads may also show pip's progress bar. Press `Ctrl+C` to stop following the log without stopping the installer.
 
+## NERSC Perlmutter
+
+From the repository root on Perlmutter, run the installer. It creates a Conda environment at `GrainGNN-Installation-Perlmutter-CUDA130/graingnn_venv_cuda130` by default, installs PyTorch for CUDA 13.0, then installs GrainGNN's core dependencies:
+
+```sh
+bash scripts/hpc/nersc/perlmutter/installation/install-cuda130.sh
+```
+
+To activate the environment in a later shell, change to the repository root, load the same module stack and activate its Conda prefix:
+
+```sh
+cd /path/to/graphGNN
+module reset
+module load cpe/26.03 PrgEnv-gnu/8.7.0 craype-accel-nvidia80 cudatoolkit/13.0
+module load conda/Miniforge3-26.9.4-1
+conda activate "$PWD/GrainGNN-Installation-Perlmutter-CUDA130/graingnn_venv_cuda130"
+```
+
+As on Frontier, the environment sets `PYTHONNOUSERSITE=1` on activation, accepts `INSTALL_ROOT`, `VENV_PATH`, and `PYTHON_VERSION` overrides, and does not install HydraGNN's additional packages or optional PyG compiled extensions. Run the GPU smoke test inside a GPU allocation with `python scripts/check_gpu.py`.
+
 ## Verify
 
 After installation, activate the environment and run the focused tests:
