@@ -1,0 +1,32 @@
+#!/bin/bash
+#PBS -N graingnn-xpu-tests
+#PBS -q debug
+#PBS -l select=1
+#PBS -l walltime=00:30:00
+#PBS -l filesystems=flare:home
+#PBS -j oe
+# Submit from the repository root:
+#   qsub -A <project> scripts/hpc/alcf/aurora/tests/run-xpu-tests.pbs
+# Override the environment with: qsub -v VENV_PATH=/path/to/venv ...
+set -Eeuo pipefail
+
+cd "${PBS_O_WORKDIR:-$PWD}"
+VENV_PATH="${VENV_PATH:-${PWD}/GrainGNN-Installation-Aurora-XPU/graingnn_venv_xpu}"
+
+set +u
+module reset
+module load "${FRAMEWORKS_MODULE:-frameworks}"
+set -u
+# shellcheck disable=SC1091
+source "${VENV_PATH}/bin/activate"
+export PYTHONNOUSERSITE=1
+
+echo "Host: $(hostname); repository: ${PWD}; venv: ${VENV_PATH}"
+python scripts/check_gpu.py --require-xpu
+# -rs reports skips so a missing XPU is visible instead of silently passing.
+python -m pytest -m xpu -v -rs tests/test_xpu.py
+python - <<'PY'
+import torch
+assert torch.xpu.is_available(), "XPU tests ran without a visible XPU"
+PY
+echo "GrainGNN Aurora XPU tests passed."

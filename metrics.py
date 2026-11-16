@@ -44,7 +44,8 @@ class feature_metric:
         if self.model_type == 'regressor':
             
             add('grain', 0)
-            add('grain', 1)
+            if y_dict['grain'].shape[1] > 1:
+                add('grain', 1)   # excess volume (absent when extraV is dropped)
             add('joint', 0)
             add('joint', 1)        
 
@@ -91,7 +92,7 @@ class feature_metric:
             x_err = 100*math.sqrt(self.acc_dicts['joint0err']/self.acc_dicts['joint0'])
             y_err = 100*math.sqrt(self.acc_dicts['joint1err']/self.acc_dicts['joint1'])
             s_err = 100*math.sqrt(self.acc_dicts['grain0err']/self.acc_dicts['grain0'])
-            v_err = 100*math.sqrt(self.acc_dicts['grain1err']/self.acc_dicts['grain1'])
+            v_err = 100*math.sqrt(self.acc_dicts['grain1err']/self.acc_dicts['grain1']) if self.acc_dicts['grain1'] else 0.0
             
             print('err, joint x: %2.1f, y: %2.1f, grain s: %2.1f, v: %2.1f'%(x_err, y_err, s_err, v_err))
             self.acc_dicts['joint0err'] = 0

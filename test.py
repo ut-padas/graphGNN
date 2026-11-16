@@ -195,8 +195,9 @@ if __name__=='__main__':
     
     if device=='cuda':
         print('use %d GPUs'%torch.cuda.device_count())
-        Rmodel.cuda()  
-        Cmodel.cuda()
+    Rmodel.to(device)
+    Cmodel.to(device)
+    print('model parameters on device:', next(Rmodel.parameters()).device)
     
     print('==========  architecture  ========')
     print('type -- multilayer heterogeous GCLSTM')

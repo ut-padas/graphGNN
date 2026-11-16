@@ -89,7 +89,8 @@ def train(model, train_loader, test_loader):
     
     if device=='cuda':
         print('use %d GPUs'%torch.cuda.device_count())
-        model.cuda()
+    model.to(device)
+    print('model parameters on device:', next(model.parameters()).device)
         
     
 
