@@ -10,3 +10,5 @@ graphs/120_120/traj0.pkl
 *.egg-info/
 build/
 dist/
+GrainGNN-Installation-*/
+*-install.log

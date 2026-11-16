@@ -16,16 +16,26 @@ def main():
         action="store_true",
         help="fail unless PyTorch is a ROCm build",
     )
+    parser.add_argument(
+        "--require-xpu",
+        action="store_true",
+        help="fail unless PyTorch runs on an Intel XPU",
+    )
     args = parser.parse_args()
 
-    if not torch.cuda.is_available():
+    if torch.cuda.is_available() and not args.require_xpu:
+        backend = torch.cuda
+        device = torch.device("cuda:0")
+    elif hasattr(torch, "xpu") and torch.xpu.is_available():
+        backend = torch.xpu
+        device = torch.device("xpu:0")
+    else:
         raise SystemExit(
             "GPU smoke test failed: PyTorch cannot see a GPU. Run inside a GPU "
             "allocation with the matching accelerator modules and PyTorch build."
         )
 
-    device = torch.device("cuda:0")
-    device_count = torch.cuda.device_count()
+    device_count = backend.device_count()
     if args.require_rocm and torch.version.hip is None:
         raise SystemExit(
             f"GPU smoke test failed: --require-rocm was set, but PyTorch "
@@ -35,12 +45,12 @@ def main():
     print(f"PyTorch: {torch.__version__}")
     print(f"PyTorch Geometric: {torch_geometric.__version__}")
     print(f"Visible GPUs: {device_count}")
-    print(f"Selected GPU: {torch.cuda.get_device_name(device)} ({device})")
+    print(f"Selected GPU: {backend.get_device_name(device)} ({device})")
     print(f"ROCm HIP version: {torch.version.hip or 'not a ROCm build'}")
 
     values = torch.arange(4096, dtype=torch.float32, device=device)
     result = values.square().sum()
-    torch.cuda.synchronize(device)
+    backend.synchronize(device)
     assert result.device == device and torch.isfinite(result).item() and result.item() > 0
     print(f"PyTorch GPU operation passed: result on {result.device}")
 
@@ -67,7 +77,7 @@ def main():
     outputs = convolution(graph.x_dict, graph.edge_index_dict)
     loss = sum(output.square().mean() for output in outputs.values())
     loss.backward()
-    torch.cuda.synchronize(device)
+    backend.synchronize(device)
 
     assert set(outputs) == {"grain", "joint"}
     assert outputs["grain"].shape == (4, 5)
