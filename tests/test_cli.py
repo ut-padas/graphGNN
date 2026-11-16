@@ -1,6 +1,6 @@
 """Tests for extract.dataset, extract.exaca_reader.read_run and the command line (python -m extract).
 Run with pytest or `python tests/test_cli.py`."""
-import sys, os, json, pickle, types, tempfile, numpy as np
+import sys, os, json, pickle, types, tempfile, importlib.util, numpy as np
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, os.path.dirname(__file__))
 from test_stack_tracking import moving_seeds_stack
@@ -62,6 +62,13 @@ def test_read_run_converts_exaca_units(tmp_path=None):
 
 
 def test_cli_exaca_runs_and_pickles_to_one_dataset(tmp_path=None):
+    if importlib.util.find_spec('vtk') is None:
+        reason = 'the ExaCA VTK reader needs the optional vtk package'
+        if 'pytest' in sys.modules:                                  # pytest run; direct runs must not need pytest
+            import pytest
+            pytest.skip(reason)
+        print('skip test_cli_exaca_runs_and_pickles_to_one_dataset:', reason)
+        return
     d = str(tmp_path or tempfile.mkdtemp())
     runs = [write_exaca_run(os.path.join(d, f'run{seed}'), moving_seeds_stack(speed=0.5, seed=seed), seed=seed) for seed in (7, 8)]
     cli([runs[0], os.path.join(d, 'one.pkl'), '--span', '3'])
